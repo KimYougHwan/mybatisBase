@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.noaa.tcdis.restserver.dao.ReturnSimlarTyphoonMapper">
+	
+	<select id="findToSimlilarIdListByTyphoonName" parameterType="string" resultType="com.noaa.tcdis.restserver.vo.SimilarListVo">
+		SELECT 
+			SIMILAR_ID ,B.ENG_TYPHOON_NAME , B.YEAR
+		FROM TYPHOON_SIMILAR A ,TYPHOON_CODE B
+		WHERE A.TYPHOON_ID = 	(SELECT TYPHOON_ID FROM (SELECT TYPHOON_ID  from 
+							TYPHOON_CODE WHERE ENG_TYPHOON_NAME =#{typhoonName} ORDER BY YEAR DESC	)WHERE ROWNUM = 1)
+		AND A.SIMILAR_ID = B.TYPHOON_ID							
+    	ORDER BY SIMILAR_AREA
+	
+	</select>
+	
+	<select id="selectTyphoonTrackToInfoKma" parameterType="com.noaa.tcdis.restserver.vo.TyphoonTrackListParamVo" 
+					resultType="com.noaa.tcdis.restserver.vo.CrewCntOnboardServiceTyphoonTrack">
+		<![CDATA[
+			SELECT  
+			 	to_char(tm_fc , 'YYYY-MM-DD HH:MI:SS') AS TIMESTAMP ,
+	            TYP_LAT AS LAT,
+	            TYP_LON AS LON,
+	            TYP_PS  AS ATM,
+	            
+	            TYP_DIR AS DIRECTION,
+	            TYP_SP  AS SPEED
+	        FROM TYPHOON_INFO_KMA
+	        WHERE to_char(tm_fc , 'YYYY') = #{year}					
+			AND TYP_EN = #{engTyphoonName}
+		]]>
+	</select>
+	
+	<select id="selectTyphoonTrackToInfo" parameterType="com.noaa.tcdis.restserver.vo.TyphoonTrackListParamVo" 
+					resultType="com.noaa.tcdis.restserver.vo.CrewCntOnboardServiceTyphoonTrack">
+		<![CDATA[
+			SELECT 
+	            UTC_TIME AS TIMESTAMP, 
+	            LATITUDE AS LAT, 
+	            LONGITUDE AS LON ,
+	            CENTRAL_PRE AS ATM 
+	        FROM TYPHOON_INFO
+	        WHERE TYPHOON_ID = #{typhoonId}
+	        ORDER BY UTC_TIME DESC
+        ]]>			
+	</select>	
+	
+	<select id="selectYyphoonDamage" parameterType="com.noaa.tcdis.restserver.vo.TyphoonDamageParamVo" 
+				resultType="com.noaa.tcdis.restserver.vo.CrewCntOnboardServiceTyphoonDamage" >
+		SELECT T.* FROM(
+			SELECT 
+		       C.LAT,
+		       C.LON,
+		       ( NVL(BUG_DME,0) + 
+		       	 NVL(SHP_DME,0) + 
+		       	 NVL(FMD_DME,0) + 
+		       	 NVL(PBM_WLN_DME,0) + 
+		       	 NVL(PBM_ALN_DME,0) +
+		         NVL(PBM_ADN_DME,0) + 
+		         NVL(PBM_SCN_DME,0) + 
+		         NVL(PBM_FGN_DME,0) + 
+		         NVL(PBM_VHN_DME,0) + 
+		         NVL(PBM_ETC_DME,0) +
+		         NVL(PUB_LBN_DME,0) + 
+		         NVL(PUB_RIN_DME,0) + 
+		         NVL(PUB_SRN_DME,0) + 
+		         NVL(PUB_WAN_DME,0) + 
+		         NVL(PUB_HAN_DME,0) + 
+		         NVL(PUB_PON_DME,0) + 
+		         NVL(PUB_SCN_DME,0) + 
+		         NVL(PUB_RAN_DME,0) + 
+		         NVL(PUB_IEN_DME,0) + 
+		         NVL(PUB_SLN_DME,0) + 
+		         NVL(PUB_ARN_DME,0) + 
+		         NVL(PUB_SMN_DME,0) + 
+		         NVL(PUB_ETC_DME,0) ) AS DAMAGE
+		  	FROM DATA_DME_PUB A, DATA_DME_PBM B , BJC_CODE_2016 C                                                                                                                                                                                       
+	     	WHERE A.SI_CODE = B.SI_CODE                                                                                                                                                                                                
+		   	AND TO_DATE(A.BEG_DATE) BETWEEN TO_DATE( #{sDate} ,'YYYYMMDD') AND TO_DATE(#{eDate},'YYYYMMDD') 
+		   	AND A.DAMAGE_DATE_CODE = B.DAMAGE_DATE_CODE
+		   	AND A.SI_CODE = C.SI_CODE                                                                                                                         
+		   	AND A.CODE = 'HZD002'                                                                                                                                                                                                      
+		 	ORDER BY DAMAGE	DESC	
+		 	)T
+		 	WHERE T.DAMAGE != 0
+	</select>
+	
+</mapper>
